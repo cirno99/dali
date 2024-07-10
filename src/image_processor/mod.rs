@@ -55,8 +55,7 @@ pub fn process_image(
     for (i, wm_buffer) in wm_buffers.iter().enumerate() {
         let watermark = &watermarks[i];
         debug!("Applying watermark: {:?}", watermark);
-        let wm =
-            VipsImage::new_from_buffer(&wm_buffer[..], "[access=VIPS_ACCESS_SEQUENTIAL]")?;
+        let wm = VipsImage::new_from_buffer(&wm_buffer[..], "[access=VIPS_ACCESS_SEQUENTIAL]")?;
 
         let wm_width = wm.get_width();
         let wm_height = wm.get_height();
@@ -117,7 +116,6 @@ pub fn process_image(
             let options = ops::JpegsaveBufferOptions {
                 q: quality,
                 background: vec![255.0],
-                strip: true,
                 optimize_coding: true,
                 optimize_scans: true,
                 interlace: true,
@@ -128,7 +126,6 @@ pub fn process_image(
         ImageFormat::Webp => {
             let options = ops::WebpsaveBufferOptions {
                 q: quality,
-                strip: true,
                 effort: 2,
                 ..ops::WebpsaveBufferOptions::default()
             };
@@ -137,7 +134,6 @@ pub fn process_image(
         ImageFormat::Png => {
             let options = ops::PngsaveBufferOptions {
                 q: quality,
-                strip: true,
                 bitdepth: 8,
                 ..ops::PngsaveBufferOptions::default()
             };
@@ -146,7 +142,6 @@ pub fn process_image(
         ImageFormat::Heic => {
             let options = ops::HeifsaveBufferOptions {
                 q: quality,
-                strip: true,
                 ..ops::HeifsaveBufferOptions::default()
             };
             ops::heifsave_buffer_with_opts(&final_image, &options)

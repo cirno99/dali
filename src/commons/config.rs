@@ -11,16 +11,12 @@ pub struct Configuration {
     pub app_port: u16,
     pub health_port: u16,
     pub log_level: Option<String>,
+    pub public_img_path: Option<String>,
     pub vips_threads: Option<u16>,
     pub reqwest_timeout_millis: Option<u16>,
     pub reqwest_connection_timeout_millis: Option<u16>,
     pub reqwest_pool_max_idle_per_host: Option<u16>,
     pub reqwest_pool_idle_timeout_millis: Option<u16>,
-    pub s3_region: Option<String>,
-    pub s3_key: Option<String>,
-    pub s3_secret: Option<String>,
-    pub s3_endpoint: Option<String>,
-    pub s3_bucket: Option<String>,
 }
 
 impl fmt::Display for Configuration {
