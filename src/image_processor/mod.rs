@@ -2,6 +2,7 @@
 
 use crate::commons::*;
 use libvips::ops;
+use libvips::ops::thumbnail_image;
 use libvips::Result;
 use libvips::VipsImage;
 use log::*;
@@ -18,6 +19,8 @@ pub fn process_image(
         quality,
         watermarks,
         rotation,
+        crop,
+        square,
     } = parameters;
     let needs_rotation = rotation.is_some()
         || match rexif::parse_buffer_quiet(&buffer[..]).0 {
@@ -48,6 +51,27 @@ pub fn process_image(
     } else {
         resize_image(source, &size)?
     };
+
+    if crop.w.is_some() && crop.h.is_some() {
+        debug!("Smart crop: {}", crop);
+        if let (Some(width), Some(height)) = (crop.w, crop.h) {
+            let (fw, fh) = (final_image.get_height(), final_image.get_width());
+            // 只在url的w和h小于原图的情况下处理
+            if fw >= width && fh >= height {
+                final_image = ops::smartcrop_with_opts(
+                    &final_image,
+                    width,
+                    height,
+                    &libvips::ops::SmartcropOptions {
+                        interesting: ops::Interesting::Centre,
+                        attention_x: 0,
+                        attention_y: 0,
+                        premultiplied: false,
+                    },
+                )?;
+            }
+        }
+    }
 
     let image_width = final_image.get_width();
     let image_height = final_image.get_height();
@@ -108,6 +132,23 @@ pub fn process_image(
         };
         final_image =
             ops::composite_2_with_opts(&final_image, &wm, ops::BlendMode::Over, &options)?;
+    }
+
+    if square {
+        let (width, height) = (final_image.get_width(), final_image.get_height());
+        let size = i32::max(width, height);
+        final_image = ops::thumbnail_image(&final_image, size)?;
+        let opts = ops::GravityOptions {
+            extend: ops::Extend::White,
+            background: vec![],
+        };
+        final_image = ops::gravity_with_opts(
+            &final_image,
+            ops::CompassDirection::Centre,
+            size,
+            size,
+            &opts,
+        )?;
     }
 
     debug!("Encoding to: {}", format);

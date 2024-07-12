@@ -29,6 +29,10 @@ pub struct ProcessImageRequest {
     pub watermarks: Vec<Watermark>,
     #[serde(default)]
     pub rotation: Option<Rotation>,
+    #[serde(default)]
+    pub crop: Crop,
+    #[serde(default = "default_square")]
+    pub square: bool,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -46,6 +50,12 @@ pub struct Watermark {
 pub struct Size {
     pub width: Option<i32>,
     pub height: Option<i32>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct Crop {
+    pub w: Option<i32>,
+    pub h: Option<i32>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -91,12 +101,26 @@ pub enum ImageFormat {
     Heic,
 }
 
+fn default_square() -> bool {
+    false
+}
+
 fn default_quality() -> i32 {
     75
 }
 
 fn default_watermark_size() -> f64 {
     10.0
+}
+
+impl fmt::Display for Crop {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let (Some(width), Some(height)) = (self.w, self.h) {
+            write!(f, "w: {}, h: {}", width, height)
+        } else {
+            write!(f, "w: {}, h: {}", "null", "null")
+        }
+    }
 }
 
 impl Into<Angle> for Rotation {
@@ -156,6 +180,12 @@ impl Default for Size {
             width: None,
             height: None,
         }
+    }
+}
+
+impl Default for Crop {
+    fn default() -> Self {
+        Crop { w: None, h: None }
     }
 }
 
