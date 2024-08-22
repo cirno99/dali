@@ -7,6 +7,7 @@ use libvips::{
     },
     VipsImage,
 };
+use reqwest::Url;
 use tokio::{fs::File, io::AsyncReadExt};
 
 #[macro_use]
@@ -19,6 +20,15 @@ async fn test_get_simple() {
         .await
         .expect("Unable to download file");
     utils::assert_result(&result[..], "raw.jpg");
+}
+
+#[tokio::test]
+async fn test_parse_url() {
+    let url = Url::parse(
+        "https://img.goooy.cn/files/11848/968037/968145/0e3bd575cc4748f82118266b5264d5de.jpg",
+    )
+    .unwrap();
+    dbg!("{:?}", url);
 }
 
 #[tokio::test]
