@@ -1,4 +1,5 @@
 {
+  "vips_threads":1,
   "app_port": 8089,
   "health_port": 8081,
   "log_level": "info",
