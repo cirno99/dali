@@ -41,11 +41,13 @@ pub fn save_buffer_fn(
                 q: quality,
                 background: vec![255.0],
                 optimize_coding: true,
-                optimize_scans: true,
                 interlace: true,
                 ..ops::JpegsaveBufferOptions::default()
             };
-            ops::jpegsave_buffer_with_opts(&final_image, &options).map(|u8| u8.into())
+            let out = ops::jpegsave_buffer_with_opts(&final_image, &options).map(|u8| u8.into());
+            final_image.image_set_kill(true);
+            drop(options);
+            out
         }
         ImageFormat::Webp => {
             let options = ops::WebpsaveBufferOptions {
@@ -53,7 +55,10 @@ pub fn save_buffer_fn(
                 effort: 2,
                 ..ops::WebpsaveBufferOptions::default()
             };
-            ops::webpsave_buffer_with_opts(&final_image, &options).map(|u8| u8.into())
+            let out = ops::webpsave_buffer_with_opts(&final_image, &options).map(|u8| u8.into());
+            final_image.image_set_kill(true);
+            drop(options);
+            out
         }
         ImageFormat::Png => {
             let options = ops::PngsaveBufferOptions {
@@ -61,14 +66,20 @@ pub fn save_buffer_fn(
                 bitdepth: 8,
                 ..ops::PngsaveBufferOptions::default()
             };
-            ops::pngsave_buffer_with_opts(&final_image, &options).map(|u8| u8.into())
+            let out = ops::pngsave_buffer_with_opts(&final_image, &options).map(|u8| u8.into());
+            final_image.image_set_kill(true);
+            drop(options);
+            out
         }
         ImageFormat::Heic => {
             let options = ops::HeifsaveBufferOptions {
                 q: quality,
                 ..ops::HeifsaveBufferOptions::default()
             };
-            ops::heifsave_buffer_with_opts(&final_image, &options).map(|u8| u8.into())
+            let out = ops::heifsave_buffer_with_opts(&final_image, &options).map(|u8| u8.into());
+            final_image.image_set_kill(true);
+            drop(options);
+            out
         }
     }
 }
@@ -103,20 +114,7 @@ pub fn process_image(
     } else {
         ""
     };
-    let source = VipsImage::new_from_buffer(&buffer[..], options)?;
-
-    let mut final_image = if needs_rotation {
-        let exif_rotated = ops::autorot(&source)?;
-        debug!("Rotating image to {:?}", rotation);
-        if let Some(rotation) = rotation {
-            let resized = resize_image(exif_rotated, &size)?;
-            ops::rot(&resized, rotation.into())?
-        } else {
-            resize_image(exif_rotated, &size)?
-        }
-    } else {
-        resize_image(source, &size)?
-    };
+    let mut final_image = VipsImage::new_from_buffer(&buffer.as_slice(), options)?;
 
     if crop.w.is_some() && crop.h.is_some() {
         debug!("Smart crop: {}", crop);
@@ -221,10 +219,7 @@ pub fn process_image(
     save_buffer_fn(format, &final_image, quality)
 }
 
-fn resize_image(img: VipsImage, size: &Size) -> Result<VipsImage> {
-    if size.height.is_none() && size.width.is_none() {
-        return Ok(img);
-    }
+fn resize_image(img: &VipsImage, size: &Size) -> Result<VipsImage> {
     debug!("Resizing image to {:?}", size);
     let original_width = img.get_width();
     let original_height = img.get_height();

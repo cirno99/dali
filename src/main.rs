@@ -22,7 +22,7 @@ mod routes;
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
-#[tokio::main]
+#[tokio::main(worker_threads = 1)]
 async fn main() {
     let config = Configuration::new().expect("Failed to load application configuration.");
     println!(r#"{{"configuration": {}}}"#, config);
