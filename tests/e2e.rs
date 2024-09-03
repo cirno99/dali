@@ -2,8 +2,8 @@
 
 use libvips::{
     ops::{
-        gravity, gravity_with_opts, resize, smartcrop, smartcrop_with_opts, thumbnail,
-        GravityOptions, SmartcropOptions,
+        gravity_with_opts, resize, smartcrop_with_opts, thumbnail,
+        GravityOptions,
     },
     VipsImage,
 };

@@ -38,13 +38,13 @@ where
             } else {
                 Err((
                     StatusCode::BAD_REQUEST,
-                    format!("the provided parameters within the query string aren't valid"),
+                    "the provided parameters within the query string aren't valid".to_string(),
                 ))
             }
         } else {
             Err((
                 StatusCode::BAD_REQUEST,
-                format!("the provided parameters within the query string aren't valid"),
+                "the provided parameters within the query string aren't valid".to_string(),
             ))
         }
     }
@@ -64,6 +64,8 @@ pub enum ImageProcessingError {
     ProcessingWorkerJoinError,
     #[error("the image processing with libvips has failed")]
     LibvipsProcessingFailed(libvips::error::Error),
+    #[error("the image processing with libvips has failed")]
+    AxumHttpError(#[from] axum::http::Error),
 }
 
 impl IntoResponse for ImageProcessingError {
@@ -169,12 +171,11 @@ pub async fn process_image(
         ImageProcessingError::LibvipsProcessingFailed(e)
     })?;
 
-    log_size_metrics(&format, total_input_size, processed_image.len());
+    // log_size_metrics(&format, total_input_size, processed_image.len());
     Ok(Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", format!("image/{}", format))
-        .body(Body::from(processed_image))
-        .unwrap())
+        .body(Body::from(Into::<Vec<u8>>::into(processed_image)))?)
 }
 
 fn log_size_metrics(format: &ImageFormat, input_size: usize, response_length: usize) {

@@ -2,16 +2,82 @@
 
 use crate::commons::*;
 use libvips::ops;
-use libvips::ops::thumbnail_image;
 use libvips::Result;
 use libvips::VipsImage;
 use log::*;
+
+#[derive(Clone)]
+pub struct VipsOutput(Option<Vec<u8>>);
+
+impl From<Vec<u8>> for VipsOutput {
+    fn from(buf: Vec<u8>) -> Self {
+        Self(Some(buf))
+    }
+}
+impl From<VipsOutput> for Vec<u8> {
+    fn from(vo: VipsOutput) -> Vec<u8> {
+        Option::expect(vo.0.to_owned(), "error")
+    }
+}
+
+impl Drop for VipsOutput {
+    fn drop(&mut self) {
+        if let Some(buf) = self.0.take() {
+            let ptr = buf.as_ptr();
+            std::mem::forget(buf);
+            unsafe { glib_sys::g_free(ptr as *mut _) };
+        }
+    }
+}
+
+pub fn save_buffer_fn(
+    format: ImageFormat,
+    final_image: &VipsImage,
+    quality: i32,
+) -> Result<VipsOutput> {
+    match format {
+        ImageFormat::Jpeg => {
+            let options = ops::JpegsaveBufferOptions {
+                q: quality,
+                background: vec![255.0],
+                optimize_coding: true,
+                optimize_scans: true,
+                interlace: true,
+                ..ops::JpegsaveBufferOptions::default()
+            };
+            ops::jpegsave_buffer_with_opts(&final_image, &options).map(|u8| u8.into())
+        }
+        ImageFormat::Webp => {
+            let options = ops::WebpsaveBufferOptions {
+                q: quality,
+                effort: 2,
+                ..ops::WebpsaveBufferOptions::default()
+            };
+            ops::webpsave_buffer_with_opts(&final_image, &options).map(|u8| u8.into())
+        }
+        ImageFormat::Png => {
+            let options = ops::PngsaveBufferOptions {
+                q: quality,
+                bitdepth: 8,
+                ..ops::PngsaveBufferOptions::default()
+            };
+            ops::pngsave_buffer_with_opts(&final_image, &options).map(|u8| u8.into())
+        }
+        ImageFormat::Heic => {
+            let options = ops::HeifsaveBufferOptions {
+                q: quality,
+                ..ops::HeifsaveBufferOptions::default()
+            };
+            ops::heifsave_buffer_with_opts(&final_image, &options).map(|u8| u8.into())
+        }
+    }
+}
 
 pub fn process_image(
     buffer: Vec<u8>,
     wm_buffers: Vec<Vec<u8>>,
     parameters: ProcessImageRequest,
-) -> Result<Vec<u8>> {
+) -> Result<VipsOutput> {
     let ProcessImageRequest {
         image_address: _addr,
         size,
@@ -152,42 +218,7 @@ pub fn process_image(
     }
 
     debug!("Encoding to: {}", format);
-    match format {
-        ImageFormat::Jpeg => {
-            let options = ops::JpegsaveBufferOptions {
-                q: quality,
-                background: vec![255.0],
-                optimize_coding: true,
-                optimize_scans: true,
-                interlace: true,
-                ..ops::JpegsaveBufferOptions::default()
-            };
-            ops::jpegsave_buffer_with_opts(&final_image, &options)
-        }
-        ImageFormat::Webp => {
-            let options = ops::WebpsaveBufferOptions {
-                q: quality,
-                effort: 2,
-                ..ops::WebpsaveBufferOptions::default()
-            };
-            ops::webpsave_buffer_with_opts(&final_image, &options)
-        }
-        ImageFormat::Png => {
-            let options = ops::PngsaveBufferOptions {
-                q: quality,
-                bitdepth: 8,
-                ..ops::PngsaveBufferOptions::default()
-            };
-            ops::pngsave_buffer_with_opts(&final_image, &options)
-        }
-        ImageFormat::Heic => {
-            let options = ops::HeifsaveBufferOptions {
-                q: quality,
-                ..ops::HeifsaveBufferOptions::default()
-            };
-            ops::heifsave_buffer_with_opts(&final_image, &options)
-        }
-    }
+    save_buffer_fn(format, &final_image, quality)
 }
 
 fn resize_image(img: VipsImage, size: &Size) -> Result<VipsImage> {
@@ -203,7 +234,7 @@ fn resize_image(img: VipsImage, size: &Size) -> Result<VipsImage> {
         original_width, original_height, size
     );
 
-    let (target_width, target_height) = get_target_size(original_width, original_height, &size)?;
+    let (target_width, target_height) = get_target_size(original_width, original_height, size)?;
 
     debug!("Final size: {}x{}", target_width, target_height);
 

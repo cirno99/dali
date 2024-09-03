@@ -6,9 +6,6 @@ use log::error;
 use reqwest::Client;
 use std::env;
 use std::fmt;
-use std::fs;
-use std::path::Path;
-use std::path::PathBuf;
 use thiserror::Error;
 
 lazy_static! {

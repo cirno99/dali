@@ -19,6 +19,9 @@ mod image_processor;
 mod image_provider;
 mod routes;
 
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 #[tokio::main]
 async fn main() {
     let config = Configuration::new().expect("Failed to load application configuration.");
@@ -62,7 +65,7 @@ fn create_vips_app(config: &Configuration) -> Option<VipsApp> {
     };
 
     let vips_app_name = "dali";
-    let app = VipsApp::new(vips_app_name, false).expect("Cannot initialize libvips");
+    let app = VipsApp::new(vips_app_name, true).expect("Cannot initialize libvips");
     app.concurrency_set(vips_threads as i32);
     app.cache_set_max(0);
     app.cache_set_max_mem(0);
@@ -106,8 +109,8 @@ async fn measure_request_handling_duration(
 
 async fn start_main_server(config: &Configuration) {
     let app_state = AppState {
-        vips_app: Arc::new(create_vips_app(&config).unwrap()),
-        image_provider: Arc::new(create_image_provider(&config).await),
+        vips_app: Arc::new(create_vips_app(config).unwrap()),
+        image_provider: Arc::new(create_image_provider(config).await),
     };
 
     let app = Router::new()

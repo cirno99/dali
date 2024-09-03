@@ -12,19 +12,19 @@ pub mod file {
     use crate::image_provider::ImageProvider;
     use crate::routes::image::ImageProcessingError;
     use async_trait::async_trait;
-    use libvips::bindings::mkdir;
+
     use log::*;
     use reqwest::{Client, Url};
     use tokio::fs::File;
     use tokio::io::{AsyncReadExt, AsyncWriteExt, BufWriter};
 
-    pub fn create_path_for_file(filepath: &str) -> () {
+    pub fn create_path_for_file(filepath: &str) {
         // 将路径转换为 Path 对象
         let path = Path::new(filepath);
 
         // 使用 components 迭代路径部分并丢弃最后一个元素（文件名）
         let mut components = path.components().collect::<Vec<_>>();
-        if let Some(_) = components.pop() {
+        if components.pop().is_some() {
             // 重新组合路径部分以获取目录路径
             let dir_path = components
                 .iter()
@@ -47,6 +47,7 @@ pub mod file {
 
         // 异步读取文件到缓冲区
         file.read_to_end(&mut buffer).await.unwrap();
+        file.flush().await.unwrap();
         Ok(buffer)
     }
 
@@ -100,7 +101,6 @@ pub mod file {
                 let filepathstr = format!("{}{}", self.public_img_path, url.clone().path());
                 let filepath = Path::new(filepathstr.as_str());
                 if !url.path().is_empty() && filepath.exists() {
-                    println!("file exists: {}", filepathstr);
                     return read_file(filepathstr.as_str()).await;
                 }
                 let response = self.client.get(url.clone()).send().await.map_err(|e| {
@@ -131,7 +131,7 @@ pub mod file {
                         .unwrap();
                     let mut writer = BufWriter::new(file);
                     let bytes_vec = bytes.to_vec();
-                    writer.write_all(&bytes_vec.as_slice()).await.unwrap();
+                    writer.write_all(bytes_vec.as_slice()).await.unwrap();
                     writer.flush().await.unwrap();
                     Ok(bytes_vec)
                 } else if status.is_client_error() {

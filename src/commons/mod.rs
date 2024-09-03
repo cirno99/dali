@@ -46,21 +46,22 @@ pub struct Watermark {
     pub size: f64,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct Size {
     pub width: Option<i32>,
     pub height: Option<i32>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct Crop {
     pub w: Option<i32>,
     pub h: Option<i32>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub enum WatermarkPosition {
     Center,
+    #[default]
     Point,
 }
 
@@ -93,9 +94,10 @@ pub enum VerticalPosition {
     Center,
 }
 
-#[derive(Debug, Deserialize, Clone, Copy)]
+#[derive(Debug, Deserialize, Clone, Copy, Default)]
 pub enum ImageFormat {
     Png,
+    #[default]
     Jpeg,
     Webp,
     Heic,
@@ -118,15 +120,15 @@ impl fmt::Display for Crop {
         if let (Some(width), Some(height)) = (self.w, self.h) {
             write!(f, "w: {}, h: {}", width, height)
         } else {
-            write!(f, "w: {}, h: {}", "null", "null")
+            write!(f, "w: null, h: null")
         }
     }
 }
 
-impl Into<Angle> for Rotation {
-    fn into(self) -> Angle {
+impl From<Rotation> for Angle {
+    fn from(val: Rotation) -> Self {
         // we want it inverted as we want it anti-clockwise
-        match self {
+        match val {
             Rotation::R90 => Angle::D270,
             Rotation::R180 => Angle::D180,
             Rotation::R270 => Angle::D90,
@@ -174,39 +176,12 @@ impl fmt::Display for VerticalPosition {
     }
 }
 
-impl Default for Size {
-    fn default() -> Self {
-        Size {
-            width: None,
-            height: None,
-        }
-    }
-}
-
-impl Default for Crop {
-    fn default() -> Self {
-        Crop { w: None, h: None }
-    }
-}
-
 impl Default for Point {
     fn default() -> Self {
         Point {
             x: HorizontalPosition::Left(0),
             y: VerticalPosition::Top(0),
         }
-    }
-}
-
-impl Default for ImageFormat {
-    fn default() -> Self {
-        ImageFormat::Jpeg
-    }
-}
-
-impl Default for WatermarkPosition {
-    fn default() -> Self {
-        WatermarkPosition::Point
     }
 }
 
@@ -230,7 +205,7 @@ pub fn get_target_size(
             width: None,
             height: None,
         } => Ok((original_width, original_height)),
-        s if is_negative_or_zero(s) => Err(InvalidSizeError::new(&desired_size)),
+        s if is_negative_or_zero(s) => Err(InvalidSizeError::new(desired_size)),
         Size {
             width: Some(w),
             height: Some(h),

@@ -15,5 +15,5 @@ pub async fn create_image_provider(config: &Configuration) -> Box<dyn ImageProvi
     // {
     //     return Box::new(ReqwestImageProvider::new(config).await);
     // }
-    return Box::new(FileImageProvider::new(config).await);
+    Box::new(FileImageProvider::new(config).await)
 }

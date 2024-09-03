@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1.35.1", features = ["full"] }
 axum = { version = "0.7.4", features = ["tokio"] }
-tower = { version = "0.4.13", features = ["timeout"] }
 futures = "0.3.29"
 num_cpus = "1.16.0"
 prometheus = { version = "0.13.3", features = ["process", "nightly"] }
@@ -26,3 +25,6 @@ async-trait = "0.1.75"
 thiserror = "1.0.53"
 rayon = "1.8.1"
 reqwest = "0.12.5"
+glib-sys = "0.20.2"
+mimalloc = { version = "0.1.43", features = ["secure"] }
+
