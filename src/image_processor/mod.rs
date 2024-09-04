@@ -1,6 +1,7 @@
 // (c) Copyright 2019-2024 OLX
 
 use crate::commons::*;
+use libvips::bindings;
 use libvips::ops;
 use libvips::Result;
 use libvips::VipsImage;
@@ -25,7 +26,7 @@ impl Drop for VipsOutput {
         if let Some(buf) = self.0.take() {
             let ptr = buf.as_ptr();
             std::mem::forget(buf);
-            unsafe { glib_sys::g_free(ptr as *mut _) };
+            unsafe { bindings::g_free(ptr as *mut _) };
         }
     }
 }

@@ -115,8 +115,7 @@ async fn start_main_server(config: &Configuration) {
 
     let app = Router::new()
         .route("/", get(routes::image::process_image))
-        .with_state(app_state)
-        .layer(middleware::from_fn(measure_request_handling_duration));
+        .with_state(app_state);
 
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", config.app_port))
         .await

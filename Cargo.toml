@@ -25,6 +25,5 @@ async-trait = "0.1.82"
 thiserror = "1.0.63"
 rayon = "1.10.0"
 reqwest = "0.12.7"
-glib-sys = "0.20.2"
 mimalloc = { version = "0.1.43", features = ["secure"] }
 
