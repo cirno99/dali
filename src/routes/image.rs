@@ -117,28 +117,31 @@ pub async fn process_image(
     let main_img = image_provider.get_file(&params.image_address).await?;
     let mut total_input_size = main_img.len();
 
-    let watermarks_futures = params
-        .watermarks
-        .iter()
-        .map(|wm| image_provider.get_file(&wm.image_address));
-    let watermarks = join_all(watermarks_futures)
-        .await
-        .into_iter()
-        .filter(|r| {
-            if r.is_err() {
-                warn!(
-                    "failed to download watermark with error {}",
-                    r.as_ref().err().unwrap()
-                );
-            }
-            r.is_ok()
-        })
-        .map(|r| {
-            let watermark = r.unwrap();
-            total_input_size += watermark.len();
-            watermark
-        })
-        .collect();
+    let mut watermarks = vec![];
+    if !params.watermarks.is_empty() {
+        let watermarks_futures = params
+            .watermarks
+            .iter()
+            .map(|wm| image_provider.get_file(&wm.image_address));
+        watermarks = join_all(watermarks_futures)
+            .await
+            .into_iter()
+            .filter(|r| {
+                if r.is_err() {
+                    warn!(
+                        "failed to download watermark with error {}",
+                        r.as_ref().err().unwrap()
+                    );
+                }
+                r.is_ok()
+            })
+            .map(|r| {
+                let watermark = r.unwrap();
+                total_input_size += watermark.len();
+                watermark
+            })
+            .collect();
+    }
 
     if let Ok(elapsed) = now.elapsed() {
         let duration =
