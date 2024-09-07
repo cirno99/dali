@@ -49,7 +49,6 @@ pub fn save_buffer_fn(
             };
             let out = ops::jpegsave_buffer_with_opts(&final_image, &options).map(|u8| u8.into());
             final_image.image_set_kill(true);
-            drop(options);
             out
         }
         ImageFormat::Webp => {
@@ -60,7 +59,6 @@ pub fn save_buffer_fn(
             };
             let out = ops::webpsave_buffer_with_opts(&final_image, &options).map(|u8| u8.into());
             final_image.image_set_kill(true);
-            drop(options);
             out
         }
         ImageFormat::Png => {
@@ -71,7 +69,6 @@ pub fn save_buffer_fn(
             };
             let out = ops::pngsave_buffer_with_opts(&final_image, &options).map(|u8| u8.into());
             final_image.image_set_kill(true);
-            drop(options);
             out
         }
         ImageFormat::Heic => {
@@ -81,7 +78,6 @@ pub fn save_buffer_fn(
             };
             let out = ops::heifsave_buffer_with_opts(&final_image, &options).map(|u8| u8.into());
             final_image.image_set_kill(true);
-            drop(options);
             out
         }
     }
