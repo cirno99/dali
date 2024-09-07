@@ -2,15 +2,21 @@ use async_trait::async_trait;
 use axum::{
     body::Body,
     extract::{FromRequest, Request, State},
-    http::{Response, StatusCode},
+    http::{self, Response, StatusCode},
     response::IntoResponse,
 };
 use futures::future::join_all;
 use log::{error, warn};
+use reqwest::{
+    header::{CONTENT_TYPE, LAST_MODIFIED},
+    Url,
+};
 use serde::de::DeserializeOwned;
 use serde_json::json;
-use std::time::SystemTime;
+use std::path::PathBuf;
+use std::{ops::Deref, path::Path, time::SystemTime};
 use thiserror::Error;
+use tokio::fs;
 
 use crate::{
     commons::{ImageFormat, ProcessImageRequest},
@@ -19,7 +25,10 @@ use crate::{
 
 use super::metric::{FETCH_DURATION, INPUT_SIZE, OUTPUT_SIZE};
 
-pub struct ProcessImageRequestExtractor<T>(pub T);
+pub struct ProcessImageRequestExtractor<T> {
+    pub params: T,
+    pub if_modified: Option<String>,
+}
 
 #[async_trait]
 impl<B, T> FromRequest<B> for ProcessImageRequestExtractor<T>
@@ -31,10 +40,17 @@ where
 
     async fn from_request(req: Request, _state: &B) -> Result<Self, Self::Rejection> {
         let query = req.uri().query();
+        let if_modified = req
+            .headers()
+            .get(http::header::IF_MODIFIED_SINCE)
+            .map(|m| m.to_str().unwrap().to_owned());
         if let Some(query) = query {
             let extracted_params = serde_qs::from_str(query);
             if extracted_params.is_ok() {
-                Ok(Self(extracted_params.unwrap()))
+                Ok(Self {
+                    params: extracted_params.unwrap(),
+                    if_modified,
+                })
             } else {
                 Err((
                     StatusCode::BAD_REQUEST,
@@ -110,11 +126,52 @@ pub async fn process_image(
     State(AppState {
         vips_app,
         image_provider,
+        public_img_path,
     }): State<AppState>,
-    ProcessImageRequestExtractor(params): ProcessImageRequestExtractor<ProcessImageRequest>,
+    ProcessImageRequestExtractor {
+        params,
+        if_modified,
+    }: ProcessImageRequestExtractor<ProcessImageRequest>,
 ) -> Result<Response<Body>, ImageProcessingError> {
+    let real_filepath: String;
+    if params.image_address.starts_with("http://") || params.image_address.starts_with("https://") {
+        let url = Url::parse(&params.image_address)
+            .map_err(|_| {
+                error!(
+                    "the provided resource uri is not a valid http url: '{}'",
+                    &params.image_address
+                );
+            })
+            .unwrap();
+        let filepathstr = format!("{}{}", public_img_path, url.clone().path());
+        let filepath = Path::new(filepathstr.as_str());
+        real_filepath = filepath.to_str().unwrap().to_owned();
+    } else {
+        real_filepath = format!("{}/{}", public_img_path, params.image_address)
+            .as_str()
+            .to_string();
+    }
+
+    let filepath = Path::new(real_filepath.as_str());
     let now = SystemTime::now();
     let main_img = image_provider.get_file(&params.image_address).await?;
+
+    let metadata = fs::metadata(PathBuf::from(real_filepath.as_str()))
+        .await
+        .expect("failed to read file metadata");
+    let last_modified = metadata.modified().unwrap(); // 获取文件最后修改时间
+    let last_modified_header =
+        http::HeaderValue::from_str(httpdate::fmt_http_date(last_modified).as_str()).unwrap();
+
+    // 检查 If-Modified-Since 请求头
+    if let Some(if_modified_since) = if_modified {
+        if if_modified_since == last_modified_header {
+            return Ok(Response::builder()
+                .status(StatusCode::NOT_MODIFIED)
+                .body(Body::empty())?);
+        }
+    }
+
     let mut total_input_size = main_img.len();
 
     let mut watermarks = vec![];
@@ -177,7 +234,8 @@ pub async fn process_image(
     // log_size_metrics(&format, total_input_size, processed_image.len());
     Ok(Response::builder()
         .status(StatusCode::OK)
-        .header("Content-Type", format!("image/{}", format))
+        .header(CONTENT_TYPE, format!("image/{}", format))
+        .header(LAST_MODIFIED, last_modified_header.clone())
         .body(Body::from(Into::<Vec<u8>>::into(processed_image)))?)
 }
 

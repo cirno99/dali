@@ -3,6 +3,7 @@
 pub mod config;
 pub mod errors;
 
+use axum::http::HeaderValue;
 use errors::InvalidSizeError;
 use libvips::ops::Angle;
 use log::*;

@@ -352,6 +352,7 @@ dependencies = [
  "config",
  "env_logger",
  "futures",
+ "httpdate",
  "lazy_static",
  "libvips",
  "log",

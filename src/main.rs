@@ -86,6 +86,7 @@ async fn start_management_server(config: &Configuration) {
 pub struct AppState {
     vips_app: Arc<VipsApp>,
     image_provider: Arc<Box<dyn ImageProvider>>,
+    public_img_path: Arc<String>,
 }
 
 async fn measure_request_handling_duration(
@@ -111,6 +112,7 @@ async fn start_main_server(config: &Configuration) {
     let app_state = AppState {
         vips_app: Arc::new(create_vips_app(config).unwrap()),
         image_provider: Arc::new(create_image_provider(config).await),
+        public_img_path: Arc::new(config.public_img_path.clone()),
     };
 
     let app = Router::new()

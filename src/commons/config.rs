@@ -11,7 +11,7 @@ pub struct Configuration {
     pub app_port: u16,
     pub health_port: u16,
     pub log_level: Option<String>,
-    pub public_img_path: Option<String>,
+    pub public_img_path: String,
     pub vips_threads: Option<u16>,
     pub reqwest_timeout_millis: Option<u16>,
     pub reqwest_connection_timeout_millis: Option<u16>,

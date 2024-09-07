@@ -73,16 +73,9 @@ pub mod file {
                 )))
                 .build()
                 .unwrap();
-            if let Some(pub_path) = config.public_img_path.clone() {
-                Self {
-                    public_img_path: pub_path,
-                    client: reqwest_client,
-                }
-            } else {
-                Self {
-                    public_img_path: "".into(),
-                    client: reqwest_client,
-                }
+            Self {
+                public_img_path: config.public_img_path.clone(),
+                client: reqwest_client,
             }
         }
     }

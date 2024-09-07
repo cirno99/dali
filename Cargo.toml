@@ -26,4 +26,5 @@ thiserror = "1.0.63"
 rayon = "1.10.0"
 reqwest = "0.12.7"
 mimalloc = { version = "0.1.43", features = ["secure"] }
+httpdate = "1.0.3"
 

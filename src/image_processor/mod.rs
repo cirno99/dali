@@ -1,5 +1,8 @@
 // (c) Copyright 2019-2024 OLX
 
+use std::ops::Deref;
+use std::ops::DerefMut;
+
 use crate::commons::*;
 use libvips::bindings;
 use libvips::ops;
