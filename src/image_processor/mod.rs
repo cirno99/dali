@@ -16,8 +16,8 @@ impl From<Vec<u8>> for VipsOutput {
     }
 }
 impl From<VipsOutput> for Vec<u8> {
-    fn from(mut vo: VipsOutput) -> Vec<u8> {
-        vo.0.take().expect("error")
+    fn from(vo: VipsOutput) -> Vec<u8> {
+        Option::expect(vo.0.to_owned(), "error")
     }
 }
 
