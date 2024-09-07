@@ -1,8 +1,5 @@
 // (c) Copyright 2019-2024 OLX
 
-use std::ops::Deref;
-use std::ops::DerefMut;
-
 use crate::commons::*;
 use libvips::bindings;
 use libvips::ops;
@@ -19,8 +16,8 @@ impl From<Vec<u8>> for VipsOutput {
     }
 }
 impl From<VipsOutput> for Vec<u8> {
-    fn from(vo: VipsOutput) -> Vec<u8> {
-        Option::expect(vo.0.to_owned(), "error")
+    fn from(mut vo: VipsOutput) -> Vec<u8> {
+        vo.0.take().expect("error")
     }
 }
 

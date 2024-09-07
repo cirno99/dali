@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use axum::{
     body::Body,
     extract::{FromRequest, Request, State},
-    http::{self, Response, StatusCode},
+    http::{self, HeaderValue, Response, StatusCode},
     response::IntoResponse,
 };
 use futures::future::join_all;
@@ -14,7 +14,7 @@ use reqwest::{
 use serde::de::DeserializeOwned;
 use serde_json::json;
 use std::path::PathBuf;
-use std::{ops::Deref, path::Path, time::SystemTime};
+use std::{path::Path, time::SystemTime};
 use thiserror::Error;
 use tokio::fs;
 
@@ -122,6 +122,16 @@ impl IntoResponse for ImageProcessingError {
     }
 }
 
+async fn get_metadata(real_filepath: &str) -> HeaderValue {
+    let metadata = fs::metadata(PathBuf::from(real_filepath))
+        .await
+        .expect("failed to read file metadata");
+    let last_modified = metadata.modified().unwrap(); // 获取文件最后修改时间
+    let last_modified_header =
+        http::HeaderValue::from_str(httpdate::fmt_http_date(last_modified).as_str()).unwrap();
+    last_modified_header
+}
+
 pub async fn process_image(
     State(AppState {
         vips_app,
@@ -154,24 +164,23 @@ pub async fn process_image(
 
     let filepath = Path::new(real_filepath.as_str());
     let now = SystemTime::now();
-    let main_img = image_provider.get_file(&params.image_address).await?;
 
-    let metadata = fs::metadata(PathBuf::from(real_filepath.as_str()))
-        .await
-        .expect("failed to read file metadata");
-    let last_modified = metadata.modified().unwrap(); // 获取文件最后修改时间
-    let last_modified_header =
-        http::HeaderValue::from_str(httpdate::fmt_http_date(last_modified).as_str()).unwrap();
+    if filepath.exists() {
+        let last_modified_header = get_metadata(real_filepath.as_str()).await;
 
-    // 检查 If-Modified-Since 请求头
-    if let Some(if_modified_since) = if_modified {
-        if if_modified_since == last_modified_header {
-            return Ok(Response::builder()
-                .status(StatusCode::NOT_MODIFIED)
-                .body(Body::empty())?);
+        // 检查 If-Modified-Since 请求头
+        if let Some(if_modified_since) = if_modified {
+            if if_modified_since == last_modified_header {
+                return Ok(Response::builder()
+                    .status(StatusCode::NOT_MODIFIED)
+                    .body(Body::empty())?);
+            }
         }
     }
 
+    let main_img = image_provider.get_file(&params.image_address).await?;
+
+    let last_modified_header = get_metadata(real_filepath.as_str()).await;
     let mut total_input_size = main_img.len();
 
     let mut watermarks = vec![];
