@@ -27,9 +27,9 @@ impl Drop for VipsOutput {
             let ptr = buf.as_ptr();
             std::mem::forget(buf);
             unsafe { bindings::g_free(ptr as *mut _) };
-            let _ = self.0;
-            let _ = self;
         }
+        let _ = self.0;
+        let _ = self;
     }
 }
 
