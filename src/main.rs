@@ -65,7 +65,7 @@ fn create_vips_app(config: &Configuration) -> Option<VipsApp> {
     };
 
     let vips_app_name = "dali";
-    let app = VipsApp::new(vips_app_name, true).expect("Cannot initialize libvips");
+    let app = VipsApp::new(vips_app_name, false).expect("Cannot initialize libvips");
     app.concurrency_set(vips_threads as i32);
     app.cache_set_max(0);
     app.cache_set_max_mem(0);

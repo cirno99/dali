@@ -35,7 +35,7 @@ impl Drop for VipsOutput {
 
 pub fn save_buffer_fn(
     format: ImageFormat,
-    final_image: &VipsImage,
+    final_image: VipsImage,
     quality: i32,
 ) -> Result<VipsOutput> {
     match format {
@@ -78,6 +78,7 @@ pub fn save_buffer_fn(
             };
             let out = ops::heifsave_buffer_with_opts(&final_image, &options).map(|u8| u8.into());
             final_image.image_set_kill(true);
+
             out
         }
     }
@@ -215,7 +216,7 @@ pub fn process_image(
     }
 
     debug!("Encoding to: {}", format);
-    save_buffer_fn(format, &final_image, quality)
+    save_buffer_fn(format, final_image, quality)
 }
 
 fn resize_image(img: &VipsImage, size: &Size) -> Result<VipsImage> {
