@@ -8,7 +8,7 @@ RUN apk add --update --no-cache --repository https://mirrors.ustc.edu.cn/alpine/
     build-base=0.5-r3 \
     clang=16.0.6-r1 \
     clang16-libclang=16.0.6-r1 \
-    expat-dev=2.6.2-r0 \
+    expat-dev=2.6.3-r0 \
     giflib-dev=5.2.2-r0 \
     glib-dev=2.76.6-r0 \
     lcms2-dev=2.15-r2 \
@@ -19,7 +19,7 @@ RUN apk add --update --no-cache --repository https://mirrors.ustc.edu.cn/alpine/
     libpng-dev=1.6.39-r3 \
     librsvg-dev=2.56.3-r0 \
     libwebp-dev=1.3.2-r0 \
-    openssl-dev=3.1.6-r0 \
+    openssl-dev=3.1.7-r0 \
     orc-dev=0.4.34-r0 \
     pkgconf=1.9.5-r0 \
     tiff-dev=4.5.1-r0
@@ -50,7 +50,7 @@ COPY --from=build /usr/local/lib /usr/local/lib
 RUN apk add --update --no-cache  \
     --repository=https://https://mirrors.ustc.edu.cn/alpine/v3.18/main  \
     --repository=https://https://mirrors.ustc.edu.cn/alpine/v3.18/community \
-      expat-dev=2.6.2-r0 \
+      expat-dev=2.6.3-r0 \
       giflib-dev=5.2.2-r0 \
       glib=2.76.6-r0 \
       lcms2=2.15-r2 \
@@ -63,7 +63,7 @@ RUN apk add --update --no-cache  \
       libpng=1.6.39-r3 \
       librsvg=2.56.3-r0 \
       libwebp=1.3.2-r0 \
-      openssl=3.1.4-r5 \
+      openssl=3.1.7-r0 \
       orc=0.4.34-r0 \
       tiff=4.5.1-r0
 
