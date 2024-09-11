@@ -13,7 +13,7 @@ use reqwest::{
 };
 use serde::de::DeserializeOwned;
 use serde_json::json;
-use std::path::PathBuf;
+use std::{error::Error, path::PathBuf};
 use std::{path::Path, time::SystemTime};
 use thiserror::Error;
 use tokio::fs;
@@ -122,14 +122,14 @@ impl IntoResponse for ImageProcessingError {
     }
 }
 
-async fn get_metadata(real_filepath: &str) -> HeaderValue {
+async fn get_metadata(real_filepath: &str) -> Result<HeaderValue, Box<dyn Error>> {
     let metadata = fs::metadata(PathBuf::from(real_filepath))
         .await
         .expect("failed to read file metadata");
-    let last_modified = metadata.modified().unwrap(); // 获取文件最后修改时间
+    let last_modified = metadata.modified()?; // 获取文件最后修改时间
     let last_modified_header =
-        http::HeaderValue::from_str(httpdate::fmt_http_date(last_modified).as_str()).unwrap();
-    last_modified_header
+        http::HeaderValue::from_str(httpdate::fmt_http_date(last_modified).as_str())?;
+    Ok(last_modified_header)
 }
 
 pub async fn process_image(
@@ -166,7 +166,7 @@ pub async fn process_image(
     let now = SystemTime::now();
 
     if filepath.exists() {
-        let last_modified_header = get_metadata(real_filepath.as_str()).await;
+        let last_modified_header = get_metadata(real_filepath.as_str()).await.unwrap();
 
         // 检查 If-Modified-Since 请求头
         if let Some(if_modified_since) = if_modified {
@@ -180,7 +180,7 @@ pub async fn process_image(
 
     let main_img = image_provider.get_file(&params.image_address).await?;
 
-    let last_modified_header = get_metadata(real_filepath.as_str()).await;
+    let last_modified_header = get_metadata(real_filepath.as_str()).await.unwrap();
     let mut total_input_size = main_img.len();
 
     let mut watermarks = vec![];
@@ -244,7 +244,7 @@ pub async fn process_image(
     Ok(Response::builder()
         .status(StatusCode::OK)
         .header(CONTENT_TYPE, format!("image/{}", format))
-        .header(LAST_MODIFIED, last_modified_header.clone())
+        .header(LAST_MODIFIED, last_modified_header)
         .body(Body::from(Into::<Vec<u8>>::into(processed_image)))?)
 }
 
