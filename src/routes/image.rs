@@ -139,7 +139,7 @@ pub async fn process_image(
         public_img_path,
     }): State<AppState>,
     ProcessImageRequestExtractor {
-        params,
+        mut params,
         if_modified,
     }: ProcessImageRequestExtractor<ProcessImageRequest>,
 ) -> Result<Response<Body>, ImageProcessingError> {
@@ -160,6 +160,9 @@ pub async fn process_image(
         real_filepath = format!("{}/{}", public_img_path, params.image_address)
             .as_str()
             .to_string();
+    }
+    if params.image_address.ends_with("400X400.jpg") {
+        params.quality = 68;
     }
 
     let filepath = Path::new(real_filepath.as_str());

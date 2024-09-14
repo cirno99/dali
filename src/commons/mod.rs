@@ -109,7 +109,7 @@ fn default_square() -> bool {
 }
 
 fn default_quality() -> i32 {
-    68
+    80
 }
 
 fn default_watermark_size() -> f64 {
